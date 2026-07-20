@@ -120,19 +120,6 @@ class NotificationService {
       },
     });
   }
-
-  async notifyPointsEarned(points: number, item: string) {
-    await this.showNotification('Points Earned!', {
-      body: `+${points} points for recycling ${item}`,
-      icon: '/icon-192.png',
-      tag: 'points-earned',
-      data: {
-        type: 'points',
-        points,
-        item,
-      },
-    });
-  }
 }
 
 export const notificationService = new NotificationService();

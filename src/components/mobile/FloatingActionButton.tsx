@@ -24,7 +24,7 @@ export function FloatingActionButton() {
         animate={{ scale: 1, rotate: 0 }}
         exit={{ scale: 0, rotate: 180 }}
         transition={{ type: "spring", stiffness: 260, damping: 20 }}
-        className="fixed bottom-20 right-4 z-40"
+        className="fixed bottom-20 right-4 md:bottom-8 md:right-8 z-40"
       >
         <Button
           size="lg"
@@ -37,8 +37,8 @@ export function FloatingActionButton() {
                 : "bg-gradient-to-br from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 active:from-emerald-700 active:to-teal-800"
             }
             transition-all duration-200
-            border-4 border-white
-            focus:ring-4 focus:ring-emerald-300
+            border-4 border-white dark:border-gray-900
+            focus:ring-4 focus:ring-emerald-300 dark:focus:ring-emerald-800
           `}
         >
           <motion.div
@@ -53,17 +53,6 @@ export function FloatingActionButton() {
             )}
           </motion.div>
         </Button>
-
-        {!isOnScanPage && (
-          <motion.div
-            initial={{ scale: 0 }}
-            animate={{ scale: [0, 1.2, 1] }}
-            transition={{ delay: 0.3, duration: 0.5 }}
-            className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold rounded-full w-6 h-6 flex items-center justify-center border-2 border-white"
-          >
-            !
-          </motion.div>
-        )}
       </motion.div>
     </AnimatePresence>
   );
