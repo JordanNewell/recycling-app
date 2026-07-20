@@ -1,70 +1,125 @@
-// Service Worker for PWA functionality
-const CACHE_NAME = 'ecoscan-v1';
-const urlsToCache = [
+// Service Worker for EcoScan PWA
+const CACHE_NAME = 'ecoscan-v2';
+const STATIC_CACHE = 'ecoscan-static-v2';
+const DYNAMIC_CACHE = 'ecoscan-dynamic-v2';
+
+// Static assets to precache (app shell)
+const STATIC_ASSETS = [
   '/',
   '/index.html',
   '/manifest.json',
+  '/icon-192.png',
+  '/icon-512.png',
 ];
 
-// Install event - cache essential files
+// Install - precache app shell
 self.addEventListener('install', (event) => {
   event.waitUntil(
-    caches.open(CACHE_NAME)
-      .then((cache) => cache.addAll(urlsToCache))
+    caches.open(STATIC_CACHE)
+      .then((cache) => cache.addAll(STATIC_ASSETS))
       .then(() => self.skipWaiting())
   );
 });
 
-// Activate event - clean up old caches
+// Activate - clean old caches
 self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches.keys()
-      .then((cacheNames) => {
-        return Promise.all(
-          cacheNames.map((cacheName) => {
-            if (cacheName !== CACHE_NAME) {
-              return caches.delete(cacheName);
-            }
-          })
-        );
-      })
+      .then((names) => Promise.all(
+        names
+          .filter((name) => name !== STATIC_CACHE && name !== DYNAMIC_CACHE)
+          .map((name) => caches.delete(name))
+      ))
       .then(() => self.clients.claim())
   );
 });
 
-// Fetch event - network first, fallback to cache
+// Fetch strategies
 self.addEventListener('fetch', (event) => {
-  // Skip non-GET requests
-  if (event.request.method !== 'GET') return;
+  const { request } = event;
+  const url = new URL(request.url);
 
-  // Skip Supabase API requests
-  if (event.request.url.includes('supabase.co')) {
-    return event.respondWith(fetch(event.request));
+  // Skip non-GET
+  if (request.method !== 'GET') return;
+
+  // Skip Supabase entirely — caching REST/profiles/entries would serve stale data
+  // (points, history, badges) on reload. Also covers the /auth/ path on the Supabase host.
+  if (url.hostname.includes('supabase.co') || url.pathname.startsWith('/auth/')) {
+    return;
   }
 
-  event.respondWith(
-    fetch(event.request)
-      .then((response) => {
-        // Clone the response before caching
-        const responseToCache = response.clone();
-        
-        caches.open(CACHE_NAME).then((cache) => {
-          cache.put(event.request, responseToCache);
-        });
+  // Skip AI API calls
+  if (url.hostname.includes('huggingface.co') || url.hostname.includes('nyckel.com')) {
+    return;
+  }
 
-        return response;
-      })
-      .catch(() => {
-        // If network fails, try cache
-        return caches.match(event.request);
-      })
+  // Skip chrome-extension and blob/data URLs
+  if (url.protocol !== 'http:' && url.protocol !== 'https:') {
+    return;
+  }
+
+  // Static assets: cache-first
+  if (isStaticAsset(url)) {
+    event.respondWith(
+      caches.match(request).then((cached) => {
+        if (cached) return cached;
+        return fetch(request).then((response) => {
+          if (response.ok) {
+            const clone = response.clone();
+            caches.open(STATIC_CACHE).then((cache) => cache.put(request, clone));
+          }
+          return response;
+        });
+      }).catch(() => new Response('Offline', { status: 503 }))
+    );
+    return;
+  }
+
+  // HTML pages: network-first with cache fallback
+  if (request.headers.get('accept')?.includes('text/html')) {
+    event.respondWith(
+      fetch(request)
+        .then((response) => {
+          if (response.ok) {
+            const clone = response.clone();
+            caches.open(DYNAMIC_CACHE).then((cache) => cache.put(request, clone));
+          }
+          return response;
+        })
+        .catch(() => caches.match(request).then((cached) => {
+          if (cached) return cached;
+          return caches.match('/index.html');
+        }))
+    );
+    return;
+  }
+
+  // Everything else: stale-while-revalidate
+  event.respondWith(
+    caches.match(request).then((cached) => {
+      const fetchPromise = fetch(request)
+        .then((response) => {
+          if (response.ok) {
+            const clone = response.clone();
+            caches.open(DYNAMIC_CACHE).then((cache) => cache.put(request, clone));
+          }
+          return response;
+        })
+        .catch(() => cached);
+
+      return cached || fetchPromise;
+    })
   );
 });
+
+function isStaticAsset(url) {
+  return url.pathname.match(/\.(js|css|png|jpg|jpeg|svg|ico|woff2?|ttf|eot)$/);
+}
 
 // Push notification handler
 self.addEventListener('push', (event) => {
   const data = event.data ? event.data.json() : {};
-  
+
   const options = {
     body: data.body || 'New achievement unlocked!',
     icon: '/icon-192.png',
@@ -73,6 +128,7 @@ self.addEventListener('push', (event) => {
     data: {
       url: data.url || '/',
     },
+    actions: data.actions || [],
   };
 
   event.waitUntil(
@@ -84,7 +140,18 @@ self.addEventListener('push', (event) => {
 self.addEventListener('notificationclick', (event) => {
   event.notification.close();
 
+  const url = event.notification.data?.url || '/';
+
   event.waitUntil(
-    clients.openWindow(event.notification.data.url)
+    clients.matchAll({ type: 'window', includeUncontrolled: true })
+      .then((clientList) => {
+        for (const client of clientList) {
+          if (client.url.includes(self.location.origin) && 'focus' in client) {
+            client.navigate(url);
+            return client.focus();
+          }
+        }
+        return clients.openWindow(url);
+      })
   );
 });

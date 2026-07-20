@@ -1,8 +1,8 @@
 import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "sonner";
 import { AnimatePresence, motion } from "framer-motion";
-import { AuthProvider } from "@/contexts/AuthContext";
+import { ThemeProvider, useTheme } from "next-themes";
+import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import HomePage from "@/pages/HomePage";
 import ScanPage from "@/pages/ScanPage";
 import HistoryPage from "@/pages/HistoryPage";
@@ -10,15 +10,6 @@ import ProfilePage from "@/pages/ProfilePage";
 import MobileLayout from "@/components/MobileLayout";
 import { PWAInstallPrompt } from "@/components/PWAInstallPrompt";
 import { NotificationPermissionPrompt } from "@/components/NotificationPermissionPrompt";
-
-const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: {
-      staleTime: 60 * 1000,
-      retry: 1,
-    },
-  },
-});
 
 function AnimatedRoutes() {
   const location = useLocation();
@@ -39,8 +30,8 @@ function AnimatedRoutes() {
   };
 
   const pageTransition = {
-    type: "tween",
-    ease: "anticipate",
+    type: "tween" as const,
+    ease: "anticipate" as const,
     duration: 0.3,
   };
 
@@ -113,7 +104,7 @@ function AnimatedRoutes() {
               variants={pageVariants}
               transition={pageTransition}
             >
-              <ProfilePage />
+              <ProfilePage focusBadges />
             </motion.div>
           }
         />
@@ -122,20 +113,42 @@ function AnimatedRoutes() {
   );
 }
 
+// Reads theme from next-themes (which respects manual toggles via ProfilePage)
+// instead of sonner's hardcoded "system", so toasts match the app theme.
+function ThemedToaster() {
+  const { resolvedTheme } = useTheme();
+  return (
+    <Toaster
+      position="top-center"
+      richColors
+      closeButton
+      theme={(resolvedTheme as "light" | "dark") || "system"}
+    />
+  );
+}
+
 function App() {
   return (
-    <QueryClientProvider client={queryClient}>
+    <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
       <AuthProvider>
         <BrowserRouter>
-          <MobileLayout>
-            <AnimatedRoutes />
-          </MobileLayout>
+          <AppShell />
           <PWAInstallPrompt />
           <NotificationPermissionPrompt />
         </BrowserRouter>
-        <Toaster position="top-center" richColors closeButton />
+        <ThemedToaster />
       </AuthProvider>
-    </QueryClientProvider>
+    </ThemeProvider>
+  );
+}
+
+function AppShell() {
+  const { user } = useAuth();
+
+  return (
+    <MobileLayout showNav={!!user}>
+      <AnimatedRoutes />
+    </MobileLayout>
   );
 }
 

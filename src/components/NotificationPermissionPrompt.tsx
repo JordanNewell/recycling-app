@@ -10,18 +10,23 @@ export function NotificationPermissionPrompt() {
   const [showPrompt, setShowPrompt] = useState(false);
 
   useEffect(() => {
-    // Initialize notification service
-    notificationService.init();
+    let cancelled = false;
 
-    // Check if we should show the prompt
-    const checkPermission = async () => {
+    const init = async () => {
+      // Await init so the permission state is current before we decide to prompt.
+      await notificationService.init();
+      if (cancelled) return;
+
       if (!notificationService.hasAskedPermission() && notificationService.isEnabled() === false) {
         // Wait 5 seconds before showing notification prompt
-        setTimeout(() => setShowPrompt(true), 5000);
+        setTimeout(() => {
+          if (!cancelled) setShowPrompt(true);
+        }, 5000);
       }
     };
 
-    checkPermission();
+    init();
+    return () => { cancelled = true; };
   }, []);
 
   const handleEnable = async () => {
