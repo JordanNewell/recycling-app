@@ -2,6 +2,8 @@
 
 Track your recycling, earn points, unlock badges, and see your environmental impact.
 
+**Live demo:** https://jordannewell.github.io/recycling-app/
+
 ## Tech Stack
 
 - **React 18** + TypeScript + Vite
