@@ -4,7 +4,10 @@ import { defineConfig } from "vite"
 import sourceIdentifierPlugin from 'vite-plugin-source-identifier'
 
 const isProd = process.env.BUILD_MODE === 'prod'
+// Deployment base (e.g. /recycling-app/ on GitHub Pages); unset for local dev
+const base = process.env.VITE_BASE ?? '/'
 export default defineConfig({
+  base,
   plugins: [
     react(),
     sourceIdentifierPlugin({
