@@ -131,7 +131,7 @@ function App() {
   return (
     <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
       <AuthProvider>
-        <BrowserRouter>
+        <BrowserRouter basename={import.meta.env.BASE_URL}>
           <AppShell />
           <PWAInstallPrompt />
           <NotificationPermissionPrompt />
