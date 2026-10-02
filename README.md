@@ -1,50 +1,70 @@
-# React + TypeScript + Vite
+# EcoScan - Recycling Tracker PWA
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Track your recycling, earn points, unlock badges, and see your environmental impact.
 
-Currently, two official plugins are available:
+## Tech Stack
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react/README.md) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+- **React 18** + TypeScript + Vite
+- **Tailwind CSS** + shadcn/ui components
+- **Framer Motion** for animations
+- **Supabase** for auth, database, and realtime
+- **Hugging Face Inference API** for AI item identification
 
-## Expanding the ESLint configuration
+## Getting Started
 
-If you are developing a production application, we recommend updating the configuration to enable type aware lint rules:
+```bash
+# Install dependencies
+pnpm install
 
-- Configure the top-level `parserOptions` property like this:
+# Create .env from example
+cp .env.example .env
 
-```js
-export default tseslint.config({
-  languageOptions: {
-    // other options...
-    parserOptions: {
-      project: ['./tsconfig.node.json', './tsconfig.app.json'],
-      tsconfigRootDir: import.meta.dirname,
-    },
-  },
-})
+# Start dev server
+pnpm dev
 ```
 
-- Replace `tseslint.configs.recommended` to `tseslint.configs.recommendedTypeChecked` or `tseslint.configs.strictTypeChecked`
-- Optionally add `...tseslint.configs.stylisticTypeChecked`
-- Install [eslint-plugin-react](https://github.com/jsx-eslint/eslint-plugin-react) and update the config:
+## Environment Variables
 
-```js
-// eslint.config.js
-import react from 'eslint-plugin-react'
+| Variable | Description |
+|----------|-------------|
+| `VITE_SUPABASE_URL` | Supabase project URL |
+| `VITE_SUPABASE_ANON_KEY` | Supabase anonymous key |
+| `VITE_AI_PROVIDER` | `huggingface` \| `nyckel` \| `mock` (default: `mock`) |
+| `VITE_HF_API_TOKEN` | Hugging Face API token (for `huggingface` provider) |
+| `VITE_NYCKEL_API_KEY` | Nyckel API key (for `nyckel` provider) |
 
-export default tseslint.config({
-  // Set the react version
-  settings: { react: { version: '18.3' } },
-  plugins: {
-    // Add the react plugin
-    react,
-  },
-  rules: {
-    // other rules...
-    // Enable its recommended rules
-    ...react.configs.recommended.rules,
-    ...react.configs['jsx-runtime'].rules,
-  },
-})
+AI item identification has three providers (see `src/services/apiService.ts`): Hugging Face Inference API (trash-classification CNN), Nyckel's prefab recycling-identifier function, or a built-in mock that returns random results for development without credentials.
+
+## App Structure
+
+Routes (`src/App.tsx`, react-router-dom v6): `/` home dashboard, `/scan` AI scan + log item, `/history` entry history, `/profile` stats and badges.
+
 ```
+src/
+  pages/          HomePage, ScanPage, HistoryPage, ProfilePage
+  components/     UI components (shadcn/ui in components/ui, mobile layout, PWA install prompt)
+  contexts/       AuthContext (Supabase session)
+  integrations/   Supabase client
+  services/       apiService (AI providers), notificationService
+supabase/
+  migrations/     SQL schema (profiles, recycling_entries, badges, user_badges)
+public/           manifest.json, sw.js (service worker), icons
+```
+
+## Supabase Tables
+
+- `profiles` — user profiles (points, streaks, totals)
+- `recycling_entries` — scanned items with location data
+- `badges` — badge definitions with criteria
+- `user_badges` — junction table for awarded badges
+
+## Build
+
+```bash
+pnpm build        # Development build
+pnpm build:prod   # Production build
+```
+
+## PWA
+
+The app ships as a progressive web app with offline shell caching, install prompt, and push notification support.

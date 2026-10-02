@@ -6,7 +6,7 @@ export function CardSkeleton() {
     <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
-      className="bg-white p-4 rounded-2xl shadow-lg"
+      className="bg-card p-4 rounded-2xl shadow-lg"
     >
       <div className="flex items-center space-x-4">
         <Skeleton className="h-12 w-12 rounded-full" />
@@ -24,7 +24,7 @@ export function StatCardSkeleton() {
     <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
-      className="bg-white p-4 rounded-2xl shadow-lg flex-1 min-w-[140px]"
+      className="bg-card p-4 rounded-2xl shadow-lg flex-1 min-w-[140px]"
     >
       <div className="space-y-3">
         <Skeleton className="h-10 w-10 rounded-xl" />
@@ -40,7 +40,7 @@ export function ListItemSkeleton() {
     <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
-      className="bg-white p-4 rounded-xl shadow"
+      className="bg-card p-4 rounded-xl shadow"
     >
       <div className="flex items-start space-x-3">
         <Skeleton className="h-10 w-10 rounded-lg flex-shrink-0" />
@@ -73,9 +73,9 @@ export function LoadingScreen({ message = "Loading..." }: LoadingScreenProps) {
           repeat: Infinity,
           ease: "linear",
         }}
-        className="w-16 h-16 border-4 border-emerald-200 border-t-emerald-600 rounded-full"
+        className="w-16 h-16 border-4 border-emerald-200 dark:border-emerald-800 border-t-emerald-600 dark:border-t-emerald-400 rounded-full"
       />
-      <p className="text-gray-600 font-medium">{message}</p>
+      <p className="text-gray-600 dark:text-gray-400 font-medium">{message}</p>
     </div>
   );
 }
