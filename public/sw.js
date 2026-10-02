@@ -3,13 +3,13 @@ const CACHE_NAME = 'ecoscan-v2';
 const STATIC_CACHE = 'ecoscan-static-v2';
 const DYNAMIC_CACHE = 'ecoscan-dynamic-v2';
 
-// Static assets to precache (app shell)
+// Relative to the SW script URL, so this works under any deployment base path
 const STATIC_ASSETS = [
-  '/',
-  '/index.html',
-  '/manifest.json',
-  '/icon-192.png',
-  '/icon-512.png',
+  './',
+  'index.html',
+  'manifest.json',
+  'icon-192.png',
+  'icon-512.png',
 ];
 
 // Install - precache app shell
