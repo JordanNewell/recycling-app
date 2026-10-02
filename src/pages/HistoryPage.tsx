@@ -6,10 +6,11 @@ import { ListItemSkeleton } from "@/components/mobile/LoadingSkeletons";
 import { PullToRefresh } from "@/components/mobile/PullToRefresh";
 import { SwipeablePages } from "@/components/mobile/SwipeablePages";
 import { Button } from "@/components/ui/button";
-import { Leaf, MapPin, Calendar, TrendingUp, RefreshCw } from "lucide-react";
+import { Leaf, Calendar, TrendingUp, RefreshCw } from "lucide-react";
 import { format, isToday, isYesterday, formatDistanceToNow } from "date-fns";
 import { toast } from "sonner";
 import { useState } from "react";
+import { getTotalEnvironmentalImpact } from "@/lib/impact";
 
 export default function HistoryPage() {
   const { user, recyclingHistory, loading, refreshUser } = useAuth();
@@ -23,8 +24,8 @@ export default function HistoryPage() {
     setTimeout(() => setRefreshing(false), 1000);
   };
 
-  const getDateLabel = (date: string) => {
-    const itemDate = new Date(date);
+  const getDateLabel = (date?: string) => {
+    const itemDate = new Date(date || Date.now());
     if (isToday(itemDate)) return "Today";
     if (isYesterday(itemDate)) return "Yesterday";
     return format(itemDate, "MMM dd, yyyy");
@@ -44,9 +45,9 @@ export default function HistoryPage() {
     return (
       <div className="min-h-screen flex items-center justify-center p-6">
         <div className="text-center">
-          <Leaf className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-          <h2 className="text-xl font-bold text-gray-900 mb-2">Sign in to view history</h2>
-          <p className="text-gray-600">Track your recycling journey</p>
+          <Leaf className="w-16 h-16 text-gray-400 dark:text-gray-600 mx-auto mb-4" />
+          <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100 mb-2">Sign in to view history</h2>
+          <p className="text-gray-600 dark:text-gray-400">Track your recycling journey</p>
         </div>
       </div>
     );
@@ -64,9 +65,10 @@ export default function HistoryPage() {
 
   const groupedHistory = groupByDate();
   const totalPoints = recyclingHistory.reduce((sum, entry) => sum + entry.points, 0);
+  const impact = getTotalEnvironmentalImpact(recyclingHistory);
 
   return (
-    <SwipeablePages 
+    <SwipeablePages
       currentPath={location.pathname}
       swipeConfig={{ right: "/" }}
     >
@@ -107,7 +109,7 @@ export default function HistoryPage() {
           size="sm"
           onClick={handleRefresh}
           disabled={refreshing}
-          className="text-gray-600"
+          className="text-gray-600 dark:text-gray-400"
         >
           <RefreshCw className={`w-4 h-4 mr-2 ${refreshing ? "animate-spin" : ""}`} />
           Refresh
@@ -122,9 +124,9 @@ export default function HistoryPage() {
             animate={{ opacity: 1 }}
             className="text-center py-12"
           >
-            <Leaf className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">No history yet</h3>
-            <p className="text-gray-600">Start scanning items to build your history</p>
+            <Leaf className="w-16 h-16 text-gray-300 dark:text-gray-600 mx-auto mb-4" />
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-2">No history yet</h3>
+            <p className="text-gray-600 dark:text-gray-400">Start scanning items to build your history</p>
           </motion.div>
         ) : (
           Object.entries(groupedHistory).map(([date, entries], groupIndex) => (
@@ -136,9 +138,9 @@ export default function HistoryPage() {
             >
               {/* Date Header */}
               <div className="flex items-center space-x-2 mb-3">
-                <Calendar className="w-4 h-4 text-gray-500" />
-                <h3 className="font-semibold text-gray-900">{date}</h3>
-                <div className="flex-1 h-px bg-gray-200" />
+                <Calendar className="w-4 h-4 text-gray-500 dark:text-gray-500" />
+                <h3 className="font-semibold text-gray-900 dark:text-gray-100">{date}</h3>
+                <div className="flex-1 h-px bg-gray-200 dark:bg-gray-700" />
               </div>
 
               {/* Entries */}
@@ -146,15 +148,15 @@ export default function HistoryPage() {
                 {entries.map((entry, index) => (
                   <MobileCard key={entry.id} delay={0.05 * index} pressable>
                     <div className="flex items-start space-x-4">
-                      <div className="w-12 h-12 bg-emerald-100 rounded-xl flex items-center justify-center flex-shrink-0">
-                        <Leaf className="w-6 h-6 text-emerald-600" />
+                      <div className="w-12 h-12 bg-emerald-100 dark:bg-emerald-900/40 rounded-xl flex items-center justify-center flex-shrink-0">
+                        <Leaf className="w-6 h-6 text-emerald-600 dark:text-emerald-400" />
                       </div>
-                      
+
                       <div className="flex-1 min-w-0">
-                        <h4 className="font-semibold text-gray-900">{entry.item}</h4>
-                        <p className="text-sm text-gray-600 mt-0.5">{entry.material}</p>
-                        
-                        <div className="flex items-center space-x-4 mt-2 text-xs text-gray-500">
+                        <h4 className="font-semibold text-gray-900 dark:text-gray-100">{entry.item}</h4>
+                        <p className="text-sm text-gray-600 dark:text-gray-400 mt-0.5">{entry.material}</p>
+
+                        <div className="flex items-center space-x-4 mt-2 text-xs text-gray-500 dark:text-gray-500">
                           <div className="flex items-center">
                             <Calendar className="w-3 h-3 mr-1" />
                             {formatDistanceToNow(new Date(entry.created_at || entry.date), { addSuffix: true })}
@@ -163,8 +165,8 @@ export default function HistoryPage() {
                       </div>
 
                       <div className="text-right flex-shrink-0">
-                        <div className="bg-emerald-100 px-3 py-1 rounded-full">
-                          <span className="text-sm font-bold text-emerald-600">
+                        <div className="bg-emerald-100 dark:bg-emerald-900/40 px-3 py-1 rounded-full">
+                          <span className="text-sm font-bold text-emerald-600 dark:text-emerald-400">
                             +{entry.points}
                           </span>
                         </div>
@@ -183,17 +185,17 @@ export default function HistoryPage() {
         <div className="p-4">
           <MobileCard>
             <div className="flex items-center space-x-3 mb-3">
-              <TrendingUp className="w-5 h-5 text-emerald-600" />
-              <h3 className="font-semibold text-gray-900">Environmental Impact</h3>
+              <TrendingUp className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+              <h3 className="font-semibold text-gray-900 dark:text-gray-100">Environmental Impact</h3>
             </div>
             <div className="grid grid-cols-2 gap-4 text-center">
-              <div className="p-3 bg-emerald-50 rounded-lg">
-                <p className="text-2xl font-bold text-emerald-600">{(totalPoints * 0.5).toFixed(1)}</p>
-                <p className="text-xs text-gray-600 mt-1">kg CO2 Saved</p>
+              <div className="p-3 bg-emerald-50 dark:bg-emerald-950/30 rounded-lg">
+                <p className="text-2xl font-bold text-emerald-600 dark:text-emerald-400">{impact.totalCo2.toFixed(1)}</p>
+                <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">kg CO2 Saved</p>
               </div>
-              <div className="p-3 bg-blue-50 rounded-lg">
-                <p className="text-2xl font-bold text-blue-600">{(totalPoints * 0.3).toFixed(1)}</p>
-                <p className="text-xs text-gray-600 mt-1">kWh Energy Saved</p>
+              <div className="p-3 bg-blue-50 dark:bg-blue-950/30 rounded-lg">
+                <p className="text-2xl font-bold text-blue-600 dark:text-blue-400">{impact.totalEnergy.toFixed(1)}</p>
+                <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">kWh Energy Saved</p>
               </div>
             </div>
           </MobileCard>
