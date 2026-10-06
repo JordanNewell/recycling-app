@@ -80,7 +80,7 @@ Built with `vite-plugin-pwa` (injectManifest strategy — `src/sw.ts`):
 
 - **Precaching** — all static assets cached at install; navigation requests fall back to the cached app shell. Live-data hosts (Supabase, AI providers) are never cached.
 - **Offline scan queue** — scans confirmed while offline are stored in IndexedDB (`src/services/offlineQueue.ts`) and replayed through the normal save path when connectivity returns (on the `online` event or next app load). ScanPage shows a "waiting to sync" count.
-- **Web Push** — after the user grants notification permission, the browser push subscription is stored in `push_subscriptions` (`src/services/pushSubscription.ts`). Sending pushes from the server (Supabase edge function + the private VAPID key via `web-push`) is the remaining follow-up.
+- **Web Push** — after the user grants notification permission, the browser push subscription is stored in `push_subscriptions` (`src/services/pushSubscription.ts`). Server-side sending lives in the `send-push` edge function (see `supabase/functions/send-push/README.md` for secrets, deploy, and webhook setup).
 - Manifest (with maskable icons + app shortcuts) is generated at build time; the SW keeps the `/sw.js` URL so previously installed clients update in place.
 
 Setup for push: generate keys with `npx web-push generate-vapid-keys`, put the public key in `VITE_VAPID_PUBLIC_KEY` (local `.env` and the repo's Actions variables) and run `supabase/migrations/002_push_subscriptions.sql`.
