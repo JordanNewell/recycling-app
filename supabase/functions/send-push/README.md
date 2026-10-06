@@ -26,7 +26,7 @@ Sends Web Push notifications to a user's registered devices (`push_subscriptions
 
 ## Triggers
 
-**Badge unlock (recommended):** Dashboard → Database → Webhooks → Create a hook on `user_badges`, event INSERT, POST to `https://<project-ref>.supabase.co/functions/v1/send-push` with header `Authorization: Bearer <SERVICE_ROLE_KEY>`. The function recognizes the webhook body and sends "Badge unlocked!" with the badge name.
+**Badge unlock (recommended):** run `supabase/migrations/003_badge_push_trigger.sql` in the SQL Editor (replace `<SERVICE_ROLE_KEY>` with your service_role secret first). It creates a pg_net trigger on `user_badges` INSERT that calls this function. Equivalent dashboard route: Database → Webhooks → hook on `user_badges` (INSERT), POST to `https://<project-ref>.supabase.co/functions/v1/send-push` with header `Authorization: Bearer <SERVICE_ROLE_KEY>`.
 
 **Explicit send (server-side jobs, tests):**
 

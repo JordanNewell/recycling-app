@@ -21,8 +21,8 @@
 //
 // Dead subscriptions (push service answers 404/410) are deleted automatically.
 
-import webpush from "https://esm.sh/web-push@3.6.7";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import webpush from "npm:web-push@3.6.7";
+import { createClient } from "npm:@supabase/supabase-js@2";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
