@@ -3,6 +3,7 @@ import { Bell, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { MobileCard } from "@/components/mobile/MobileCard";
 import { notificationService } from "@/services/notificationService";
+import { subscribeToPush } from "@/services/pushSubscription";
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
 
@@ -33,6 +34,10 @@ export function NotificationPermissionPrompt() {
     const granted = await notificationService.requestPermission();
     
     if (granted) {
+      // Fire-and-forget: register the Web Push subscription without blocking
+      // the UI. subscribeToPush never throws, but catch defensively anyway.
+      void subscribeToPush().catch(() => {});
+
       toast.success("Notifications enabled!", {
         description: "You'll receive updates about badges and achievements",
       });

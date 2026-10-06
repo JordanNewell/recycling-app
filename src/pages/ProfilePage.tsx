@@ -194,7 +194,7 @@ export default function ProfilePage({ focusBadges = false }: { focusBadges?: boo
           </motion.div>
 
           <motion.div initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} className="text-center">
-            <h1 className="text-3xl font-bold">{user.name}</h1>
+            <h1 className="text-3xl md:text-4xl font-bold">{user.name}</h1>
             <div className="flex items-center justify-center space-x-2 mt-2 text-emerald-100">
               <Mail className="w-4 h-4" />
               <p className="text-sm">{user.email}</p>
@@ -209,7 +209,7 @@ export default function ProfilePage({ focusBadges = false }: { focusBadges?: boo
 
       {/* Stats Cards */}
       <div className="px-4 -mt-12 relative z-10">
-        <div className="flex gap-3 overflow-x-auto pb-2 snap-x snap-mandatory">
+        <div className="flex gap-3 overflow-x-auto pb-2 snap-x snap-mandatory md:grid md:grid-cols-4 md:overflow-x-visible md:snap-none">
           <StatCard
             icon={<TrendingUp className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />}
             value={user.points}
@@ -251,7 +251,7 @@ export default function ProfilePage({ focusBadges = false }: { focusBadges?: boo
           </div>
         </div>
 
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
           {allBadges.map((badge, index) => (
             <motion.div
               key={badge.id}
@@ -307,7 +307,7 @@ export default function ProfilePage({ focusBadges = false }: { focusBadges?: boo
 
       {/* Charts Section */}
       {recyclingHistory.length > 0 && (
-        <div className="p-4 mt-4 space-y-4">
+        <div className="p-4 mt-4 space-y-4 md:grid md:grid-cols-2 md:gap-4 md:space-y-0">
           {/* Weekly Activity Chart */}
           <MobileCard>
             <div className="space-y-3">
@@ -393,76 +393,79 @@ export default function ProfilePage({ focusBadges = false }: { focusBadges?: boo
         </div>
       )}
 
-      {/* Achievements Summary */}
-      <div className="p-4">
-        <MobileCard>
-          <div className="space-y-3">
-            <div className="flex items-center space-x-2">
-              <Target className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
-              <h3 className="font-semibold text-gray-900 dark:text-gray-100">Achievements</h3>
-            </div>
+      {/* Achievements Summary + Settings: side-by-side on md+ */}
+      <div className="md:grid md:grid-cols-2 md:gap-4 md:items-start">
+        {/* Achievements Summary */}
+        <div className="p-4">
+          <MobileCard>
+            <div className="space-y-3">
+              <div className="flex items-center space-x-2">
+                <Target className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+                <h3 className="font-semibold text-gray-900 dark:text-gray-100">Achievements</h3>
+              </div>
 
-            <div className="space-y-2 text-sm">
-              <div className="flex items-center justify-between py-2 border-b border-gray-100 dark:border-gray-800">
-                <span className="text-gray-600 dark:text-gray-400">Environmental Impact</span>
-                <span className="font-semibold text-gray-900 dark:text-gray-100">
-                  {impact.totalCo2.toFixed(1)} kg CO2 saved
-                </span>
-              </div>
-              <div className="flex items-center justify-between py-2 border-b border-gray-100 dark:border-gray-800">
-                <span className="text-gray-600 dark:text-gray-400">Energy Saved</span>
-                <span className="font-semibold text-gray-900 dark:text-gray-100">
-                  {impact.totalEnergy.toFixed(1)} kWh
-                </span>
-              </div>
-              <div className="flex items-center justify-between py-2 border-b border-gray-100 dark:border-gray-800">
-                <span className="text-gray-600 dark:text-gray-400">Active Days</span>
-                <span className="font-semibold text-gray-900 dark:text-gray-100">
-                  {(() => {
-                    const uniqueDays = new Set(
-                      recyclingHistory.map(e => e.created_at?.split('T')[0]).filter(Boolean)
-                    );
-                    return uniqueDays.size;
-                  })()}
-                </span>
-              </div>
-              <div className="flex items-center justify-between py-2">
-                <span className="text-gray-600 dark:text-gray-400">Badges Completion</span>
-                <span className="font-semibold text-gray-900 dark:text-gray-100">
-                  {allBadges.length > 0 ? ((allBadges.filter((b) => b.unlocked).length / allBadges.length) * 100).toFixed(0) : 0}%
-                </span>
+              <div className="space-y-2 text-sm">
+                <div className="flex items-center justify-between py-2 border-b border-gray-100 dark:border-gray-800">
+                  <span className="text-gray-600 dark:text-gray-400">Environmental Impact</span>
+                  <span className="font-semibold text-gray-900 dark:text-gray-100">
+                    {impact.totalCo2.toFixed(1)} kg CO2 saved
+                  </span>
+                </div>
+                <div className="flex items-center justify-between py-2 border-b border-gray-100 dark:border-gray-800">
+                  <span className="text-gray-600 dark:text-gray-400">Energy Saved</span>
+                  <span className="font-semibold text-gray-900 dark:text-gray-100">
+                    {impact.totalEnergy.toFixed(1)} kWh
+                  </span>
+                </div>
+                <div className="flex items-center justify-between py-2 border-b border-gray-100 dark:border-gray-800">
+                  <span className="text-gray-600 dark:text-gray-400">Active Days</span>
+                  <span className="font-semibold text-gray-900 dark:text-gray-100">
+                    {(() => {
+                      const uniqueDays = new Set(
+                        recyclingHistory.map(e => e.created_at?.split('T')[0]).filter(Boolean)
+                      );
+                      return uniqueDays.size;
+                    })()}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between py-2">
+                  <span className="text-gray-600 dark:text-gray-400">Badges Completion</span>
+                  <span className="font-semibold text-gray-900 dark:text-gray-100">
+                    {allBadges.length > 0 ? ((allBadges.filter((b) => b.unlocked).length / allBadges.length) * 100).toFixed(0) : 0}%
+                  </span>
+                </div>
               </div>
             </div>
-          </div>
-        </MobileCard>
-      </div>
+          </MobileCard>
+        </div>
 
-      {/* Settings */}
-      <div className="p-4">
-        <MobileCard>
-          <div className="space-y-3">
-            <div className="flex items-center space-x-2">
-              <Settings className="w-5 h-5 text-gray-600 dark:text-gray-400" />
-              <h3 className="font-semibold text-gray-900 dark:text-gray-100">Settings</h3>
+        {/* Settings */}
+        <div className="p-4">
+          <MobileCard>
+            <div className="space-y-3">
+              <div className="flex items-center space-x-2">
+                <Settings className="w-5 h-5 text-gray-600 dark:text-gray-400" />
+                <h3 className="font-semibold text-gray-900 dark:text-gray-100">Settings</h3>
+              </div>
+              <Button
+                variant="outline"
+                onClick={toggleTheme}
+                className="w-full justify-start h-12"
+              >
+                {theme === "dark" ? (
+                  <Sun className="w-5 h-5 mr-3 text-yellow-500" />
+                ) : (
+                  <Moon className="w-5 h-5 mr-3 text-gray-600" />
+                )}
+                {theme === "dark" ? "Light Mode" : "Dark Mode"}
+              </Button>
             </div>
-            <Button
-              variant="outline"
-              onClick={toggleTheme}
-              className="w-full justify-start h-12"
-            >
-              {theme === "dark" ? (
-                <Sun className="w-5 h-5 mr-3 text-yellow-500" />
-              ) : (
-                <Moon className="w-5 h-5 mr-3 text-gray-600" />
-              )}
-              {theme === "dark" ? "Light Mode" : "Dark Mode"}
-            </Button>
-          </div>
-        </MobileCard>
+          </MobileCard>
+        </div>
       </div>
 
       {/* Logout Button */}
-      <div className="p-4">
+      <div className="p-4 md:max-w-sm">
         <Button
           variant="outline"
           onClick={handleLogout}

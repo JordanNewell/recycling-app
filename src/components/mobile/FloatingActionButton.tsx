@@ -24,7 +24,7 @@ export function FloatingActionButton() {
         animate={{ scale: 1, rotate: 0 }}
         exit={{ scale: 0, rotate: 180 }}
         transition={{ type: "spring", stiffness: 260, damping: 20 }}
-        className="fixed bottom-20 right-4 md:bottom-8 md:right-8 z-40"
+        className="fixed bottom-20 right-4 z-40 md:hidden"
       >
         <Button
           size="lg"
