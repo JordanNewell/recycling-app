@@ -45,6 +45,27 @@ Deno.serve(async (req) => {
     return json(405, { error: "POST only" });
   }
 
+  // Service-role detection by JWT claims rather than string equality: the
+  // platform gateway (verify_jwt) has already established the token is
+  // genuinely signed by this project, so the payload's role claim is
+  // trustworthy. String equality breaks when signing keys are rotated
+  // (env var and api-keys endpoint can carry differently-signed JWTs).
+  const PROJECT_REF = "cwruvcrjlnafgksssxpi";
+  function isServiceRole(header: string): boolean {
+    const match = header.match(/^Bearer (.+)$/);
+    if (!match) return false;
+    const parts = match[1].split(".");
+    if (parts.length !== 3) return false;
+    try {
+      const payload = JSON.parse(
+        atob(parts[1].replace(/-/g, "+").replace(/_/g, "/")),
+      );
+      return payload?.role === "service_role" && payload?.ref === PROJECT_REF;
+    } catch {
+      return false;
+    }
+  }
+
   const vapidPublicKey = Deno.env.get("VAPID_PUBLIC_KEY");
   const vapidPrivateKey = Deno.env.get("VAPID_PRIVATE_KEY");
   const vapidSubject = Deno.env.get("VAPID_SUBJECT") ??
@@ -60,7 +81,7 @@ Deno.serve(async (req) => {
   const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
   const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
   const authHeader = req.headers.get("Authorization") ?? "";
-  const isService = authHeader === `Bearer ${serviceRoleKey}`;
+  const isService = isServiceRole(authHeader);
 
   // Resolve the caller. Service role may target anyone; a user JWT may only
   // target themselves.
