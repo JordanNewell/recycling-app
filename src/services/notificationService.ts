@@ -1,4 +1,8 @@
 // Push Notification Service
+
+// Base-path aware icon URL (works under GitHub Pages subpath deployments).
+const ICON = `${import.meta.env.BASE_URL}icon-192.png`;
+
 class NotificationService {
   private registration: ServiceWorkerRegistration | null = null;
   private permission: NotificationPermission = 'default';
@@ -67,8 +71,8 @@ class NotificationService {
     }
 
     const defaultOptions: NotificationOptions = {
-      icon: '/icon-192.png',
-      badge: '/icon-192.png',
+      icon: ICON,
+      badge: ICON,
       tag: 'ecoscan-notification',
       requireInteraction: false,
       ...options,
@@ -88,7 +92,7 @@ class NotificationService {
   async notifyBadgeUnlocked(badgeName: string, badgeDescription: string) {
     await this.showNotification('New Badge Unlocked!', {
       body: `${badgeName}: ${badgeDescription}`,
-      icon: '/icon-192.png',
+      icon: ICON,
       tag: 'badge-unlock',
       data: {
         type: 'badge-unlock',
@@ -100,7 +104,7 @@ class NotificationService {
   async notifyMilestone(milestone: string, points: number) {
     await this.showNotification('Milestone Reached!', {
       body: `${milestone} - ${points} total points earned!`,
-      icon: '/icon-192.png',
+      icon: ICON,
       tag: 'milestone',
       data: {
         type: 'milestone',
@@ -112,7 +116,7 @@ class NotificationService {
   async notifyStreakAchievement(days: number) {
     await this.showNotification('Streak Achievement!', {
       body: `Amazing! You've maintained a ${days}-day recycling streak!`,
-      icon: '/icon-192.png',
+      icon: ICON,
       tag: 'streak',
       data: {
         type: 'streak',

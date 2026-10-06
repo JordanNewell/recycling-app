@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
@@ -9,6 +9,7 @@ import { BottomSheet } from "@/components/mobile/BottomSheet";
 import { toast } from "sonner";
 import { apiService } from "@/services/apiService";
 import { getEnvironmentalImpact } from "@/lib/impact";
+import { enqueue, queuedCount, QUEUE_SYNCED_EVENT, type QueuedEntry } from "@/services/offlineQueue";
 
 interface ScanResult {
   item: string;
@@ -20,6 +21,10 @@ interface ScanResult {
   confidence?: number;
 }
 
+// Connectivity can change mid-flow (e.g. dropping between two checks), so read
+// navigator.onLine fresh on every call instead of relying on a narrowed value.
+const isOffline = () => typeof navigator !== "undefined" && navigator.onLine === false;
+
 export default function ScanPage() {
   const [scanning, setScanning] = useState(false);
   const [scanResult, setScanResult] = useState<ScanResult | null>(null);
@@ -29,6 +34,27 @@ export default function ScanPage() {
   const galleryInputRef = useRef<HTMLInputElement>(null);
   const { user, addRecyclingEntry, getPointsForMaterial } = useAuth();
   const navigate = useNavigate();
+
+  // Offline queue indicator: how many scans are waiting to sync.
+  const [pendingSyncCount, setPendingSyncCount] = useState(0);
+
+  const refreshPendingCount = useCallback(async () => {
+    try {
+      setPendingSyncCount(await queuedCount());
+    } catch {
+      // IndexedDB unavailable — the indicator is cosmetic, ignore failures.
+    }
+  }, []);
+
+  useEffect(() => {
+    void refreshPendingCount();
+    window.addEventListener("online", refreshPendingCount);
+    window.addEventListener(QUEUE_SYNCED_EVENT, refreshPendingCount);
+    return () => {
+      window.removeEventListener("online", refreshPendingCount);
+      window.removeEventListener(QUEUE_SYNCED_EVENT, refreshPendingCount);
+    };
+  }, [refreshPendingCount]);
 
   const handleFileSelect = async (file: File) => {
     if (!user) {
@@ -143,18 +169,70 @@ export default function ScanPage() {
     });
   };
 
+  const resetScanState = () => {
+    setShowResultSheet(false);
+    setScanResult(null);
+    setCapturedImage(null);
+  };
+
   const handleConfirm = async () => {
     if (!scanResult || !user) return;
 
     if (scanResult.recyclable) {
       const location = await getLocation();
-      const result = await addRecyclingEntry(
-        scanResult.item,
-        scanResult.material,
-        location
-      );
+
+      // Save the scan to the local IndexedDB queue instead of the server.
+      // Only called when the online attempt definitely did not record the
+      // entry (offline up front, or a network failure before insert), so an
+      // entry can never be both queued AND saved — zero double-counting.
+      const saveOffline = async () => {
+        const entry: QueuedEntry = {
+          id: crypto.randomUUID(),
+          userId: user.id,
+          item: scanResult.item,
+          material: scanResult.material,
+          location,
+          queuedAt: Date.now(),
+        };
+        await enqueue(entry);
+        toast.success("Saved offline", {
+          description: "It'll sync when you're back online.",
+        });
+        void refreshPendingCount();
+      };
+
+      // Offline before even trying: queue locally and skip the server.
+      if (isOffline()) {
+        await saveOffline();
+        resetScanState();
+        return;
+      }
+
+      let result: Awaited<ReturnType<typeof addRecyclingEntry>>;
+      try {
+        result = await addRecyclingEntry(
+          scanResult.item,
+          scanResult.material,
+          location
+        );
+      } catch (err) {
+        const message = err instanceof Error ? err.message : String(err);
+        if (isOffline() || /fetch|network|Failed to/i.test(message)) {
+          await saveOffline();
+          resetScanState();
+          return;
+        }
+        result = { totalItems: 0, error: true };
+      }
 
       if (result.error) {
+        if (isOffline()) {
+          // Connection dropped mid-request: the insert cannot have completed,
+          // so queue the entry for replay when back online.
+          await saveOffline();
+          resetScanState();
+          return;
+        }
         toast.error("Failed to save scan", {
           description: "Please try again in a moment.",
         });
@@ -170,9 +248,7 @@ export default function ScanPage() {
       }
     }
 
-    setShowResultSheet(false);
-    setScanResult(null);
-    setCapturedImage(null);
+    resetScanState();
   };
 
   const handleScanAnother = () => {
@@ -182,7 +258,7 @@ export default function ScanPage() {
   };
 
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen md:max-w-lg md:mx-auto">
       {/* Hidden file inputs */}
       <input
         ref={fileInputRef}
@@ -301,6 +377,13 @@ export default function ScanPage() {
               Choose from Gallery
             </Button>
           </motion.div>
+        )}
+
+        {/* Offline queue indicator */}
+        {pendingSyncCount > 0 && (
+          <p className="text-sm text-gray-500 dark:text-gray-400 text-center">
+            {pendingSyncCount} scan{pendingSyncCount === 1 ? "" : "s"} waiting to sync
+          </p>
         )}
 
         {/* Tips */}

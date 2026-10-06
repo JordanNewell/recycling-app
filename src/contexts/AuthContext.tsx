@@ -1,7 +1,8 @@
-import React, { createContext, useContext, useState, ReactNode, useEffect, useRef } from 'react';
+import React, { createContext, useContext, useState, ReactNode, useEffect, useRef, useCallback } from 'react';
 import { Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import { notificationService } from '@/services/notificationService';
+import { flushQueue } from '@/services/offlineQueue';
 import { toast } from 'sonner';
 
 const AUTH_UNAVAILABLE = 'Authentication is not configured. Please contact support.';
@@ -57,6 +58,7 @@ interface AuthContextType {
   recyclingHistory: RecyclingEntry[];
   refreshUser: () => Promise<void>;
   getPointsForMaterial: (material: string) => number;
+  syncOfflineEntries: () => Promise<number>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -235,7 +237,9 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const register = async (email: string, password: string, name: string): Promise<{ success: boolean; error?: string }> => {
     if (!supabase) return { success: false, error: AUTH_UNAVAILABLE };
     try {
-      const redirectUrl = `${window.location.origin}/`;
+      // OAuth/email redirects must include the deployment base path (e.g. /recycling-app/
+      // on GitHub Pages) — redirecting to the origin root loses the returned session.
+      const redirectUrl = `${window.location.origin}${import.meta.env.BASE_URL}`;
 
       const { data, error } = await supabase.auth.signUp({
         email,
@@ -270,7 +274,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       const { error } = await supabase.auth.signInWithOAuth({
         provider,
         options: {
-          redirectTo: `${window.location.origin}/`
+          redirectTo: `${window.location.origin}${import.meta.env.BASE_URL}`
         }
       });
 
@@ -490,6 +494,62 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }
   };
 
+  // --- Offline queue sync (Phase 7.1) ---
+
+  // Always replay queued entries through the freshest addRecyclingEntry closure:
+  // it reads user.points / streak from render state, which loadUserProfile
+  // refreshes after every successful insert. Replaying through a stale closure
+  // would overwrite profile points with outdated totals on multi-entry syncs.
+  const addRecyclingEntryRef = useRef(addRecyclingEntry);
+  useEffect(() => {
+    addRecyclingEntryRef.current = addRecyclingEntry;
+  }, [addRecyclingEntry]);
+
+  const syncOfflineEntries = useCallback(async (): Promise<number> => {
+    if (!user || !session || !supabase) return 0;
+    if (typeof navigator !== 'undefined' && navigator.onLine === false) return 0;
+
+    const synced = await flushQueue((entry) => {
+      // Entries queued under a different account on this device stay queued.
+      if (entry.userId && entry.userId !== user.id) {
+        return Promise.resolve(false);
+      }
+      // Success = addRecyclingEntry resolves without an error flag. Entries
+      // flagged as duplicates were already recorded, so they count as synced.
+      return addRecyclingEntryRef.current(entry.item, entry.material, entry.location)
+        .then((result) => !result.error);
+    });
+
+    if (synced > 0) {
+      toast.success(`Synced ${synced} saved ${synced === 1 ? 'entry' : 'entries'}`);
+    }
+    return synced;
+  }, [user, session]);
+
+  // Keep the 'online' handler pointed at the latest sync closure.
+  const syncOfflineEntriesRef = useRef(syncOfflineEntries);
+  useEffect(() => {
+    syncOfflineEntriesRef.current = syncOfflineEntries;
+  }, [syncOfflineEntries]);
+
+  // Sync queued entries whenever connectivity returns (registered once).
+  useEffect(() => {
+    const handleOnline = () => {
+      void syncOfflineEntriesRef.current();
+    };
+    window.addEventListener('online', handleOnline);
+    return () => window.removeEventListener('online', handleOnline);
+  }, []);
+
+  // Also sync once after the initial profile load (and after any re-login).
+  useEffect(() => {
+    if (user && navigator.onLine !== false) {
+      void syncOfflineEntries();
+    }
+    // Keyed on user?.id only — don't re-run on unrelated profile refreshes.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id]);
+
   const refreshUser = async () => {
     if (user) {
       await loadUserProfile(user.id);
@@ -509,7 +569,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       addRecyclingEntry,
       recyclingHistory: user?.recyclingHistory || [],
       refreshUser,
-      getPointsForMaterial
+      getPointsForMaterial,
+      syncOfflineEntries
     }}>
       {children}
     </AuthContext.Provider>

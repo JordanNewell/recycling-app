@@ -297,7 +297,7 @@ export default function HomePage() {
               <motion.h1
                 initial={{ x: -20 }}
                 animate={{ x: 0 }}
-                className="text-3xl font-bold"
+                className="text-3xl md:text-4xl font-bold"
               >
                 Hello, {user.name}!
               </motion.h1>
@@ -336,7 +336,7 @@ export default function HomePage() {
 
       {/* Stats Grid */}
       <div className="p-4 -mt-6">
-        <div className="flex gap-3 overflow-x-auto pb-2 snap-x snap-mandatory">
+        <div className="flex gap-3 overflow-x-auto pb-2 snap-x snap-mandatory md:grid md:grid-cols-3 md:overflow-x-visible md:snap-none">
           <StatCard
             icon={<TrendingUp className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />}
             value={user.total_scans ?? 0}
@@ -358,70 +358,73 @@ export default function HomePage() {
         </div>
       </div>
 
-      {/* Recent Activity */}
-      <div className="p-4 space-y-4">
-        <div className="flex items-center justify-between">
-          <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100">Recent Activity</h2>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => navigate("/history")}
-            className="text-emerald-600 dark:text-emerald-400 hover:text-emerald-700 dark:hover:text-emerald-300"
-          >
-            View All <ArrowRight className="w-4 h-4 ml-1" />
-          </Button>
+      {/* Recent Activity + Quick Actions: side-by-side on md+ */}
+      <div className="md:grid md:grid-cols-2 md:gap-4 md:items-start">
+        {/* Recent Activity */}
+        <div className="p-4 space-y-4">
+          <div className="flex items-center justify-between">
+            <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100">Recent Activity</h2>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => navigate("/history")}
+              className="text-emerald-600 dark:text-emerald-400 hover:text-emerald-700 dark:hover:text-emerald-300"
+            >
+              View All <ArrowRight className="w-4 h-4 ml-1" />
+            </Button>
+          </div>
+
+          {recentActivities.length === 0 ? (
+            <MobileCard>
+              <div className="text-center py-6">
+                <Leaf className="w-12 h-12 text-gray-300 dark:text-gray-600 mx-auto mb-3" />
+                <p className="text-gray-600 dark:text-gray-400">No activity yet. Start scanning!</p>
+              </div>
+            </MobileCard>
+          ) : (
+            <div className="space-y-3">
+              {recentActivities.map((activity, index) => (
+                <MobileCard key={index} delay={0.1 + index * 0.05} pressable>
+                  <div className="flex items-center space-x-4">
+                    <div className="w-12 h-12 bg-emerald-100 dark:bg-emerald-900/40 rounded-xl flex items-center justify-center flex-shrink-0">
+                      <activity.icon className="w-6 h-6 text-emerald-600 dark:text-emerald-400" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-medium text-gray-900 dark:text-gray-100 truncate">{activity.action}</p>
+                      <p className="text-sm text-gray-500 dark:text-gray-500">{activity.time}</p>
+                    </div>
+                    <div className="text-right">
+                      <p className="font-bold text-emerald-600 dark:text-emerald-400">+{activity.points}</p>
+                      <p className="text-xs text-gray-500 dark:text-gray-500">points</p>
+                    </div>
+                  </div>
+                </MobileCard>
+              ))}
+            </div>
+          )}
         </div>
 
-        {recentActivities.length === 0 ? (
-          <MobileCard>
-            <div className="text-center py-6">
-              <Leaf className="w-12 h-12 text-gray-300 dark:text-gray-600 mx-auto mb-3" />
-              <p className="text-gray-600 dark:text-gray-400">No activity yet. Start scanning!</p>
-            </div>
-          </MobileCard>
-        ) : (
-          <div className="space-y-3">
-            {recentActivities.map((activity, index) => (
-              <MobileCard key={index} delay={0.1 + index * 0.05} pressable>
-                <div className="flex items-center space-x-4">
-                  <div className="w-12 h-12 bg-emerald-100 dark:bg-emerald-900/40 rounded-xl flex items-center justify-center flex-shrink-0">
-                    <activity.icon className="w-6 h-6 text-emerald-600 dark:text-emerald-400" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="font-medium text-gray-900 dark:text-gray-100 truncate">{activity.action}</p>
-                    <p className="text-sm text-gray-500 dark:text-gray-500">{activity.time}</p>
-                  </div>
-                  <div className="text-right">
-                    <p className="font-bold text-emerald-600 dark:text-emerald-400">+{activity.points}</p>
-                    <p className="text-xs text-gray-500 dark:text-gray-500">points</p>
-                  </div>
-                </div>
-              </MobileCard>
-            ))}
+        {/* Quick Actions */}
+        <div className="p-4 pb-8">
+          <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100 mb-4">Quick Actions</h2>
+          <div className="grid grid-cols-2 gap-3">
+            <Button
+              variant="outline"
+              onClick={() => navigate("/scan")}
+              className="h-24 flex-col space-y-2 border-2 border-emerald-200 dark:border-emerald-800 hover:bg-emerald-50 dark:hover:bg-emerald-950"
+            >
+              <Leaf className="w-6 h-6 text-emerald-600 dark:text-emerald-400" />
+              <span className="font-semibold">Scan Item</span>
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() => navigate("/badges")}
+              className="h-24 flex-col space-y-2 border-2 border-emerald-200 dark:border-emerald-800 hover:bg-emerald-50 dark:hover:bg-emerald-950"
+            >
+              <Award className="w-6 h-6 text-emerald-600 dark:text-emerald-400" />
+              <span className="font-semibold">View Badges</span>
+            </Button>
           </div>
-        )}
-      </div>
-
-      {/* Quick Actions */}
-      <div className="p-4 pb-8">
-        <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100 mb-4">Quick Actions</h2>
-        <div className="grid grid-cols-2 gap-3">
-          <Button
-            variant="outline"
-            onClick={() => navigate("/scan")}
-            className="h-24 flex-col space-y-2 border-2 border-emerald-200 dark:border-emerald-800 hover:bg-emerald-50 dark:hover:bg-emerald-950"
-          >
-            <Leaf className="w-6 h-6 text-emerald-600 dark:text-emerald-400" />
-            <span className="font-semibold">Scan Item</span>
-          </Button>
-          <Button
-            variant="outline"
-            onClick={() => navigate("/badges")}
-            className="h-24 flex-col space-y-2 border-2 border-emerald-200 dark:border-emerald-800 hover:bg-emerald-50 dark:hover:bg-emerald-950"
-          >
-            <Award className="w-6 h-6 text-emerald-600 dark:text-emerald-400" />
-            <span className="font-semibold">View Badges</span>
-          </Button>
         </div>
       </div>
       </PullToRefresh>
